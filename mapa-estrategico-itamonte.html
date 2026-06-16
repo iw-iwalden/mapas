@@ -1,0 +1,854 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mapa Estratégico — Itamonte</title>
+<style>
+  :root {
+    --bg:       #eef1f7;
+    --surface:  #ffffff;
+    --surface2: #f5f7fc;
+    --border:   #dde3f0;
+    --shadow:   0 2px 14px rgba(40,60,130,.09);
+    --text:     #1a2040;
+    --muted:    #64748b;
+    --eco:      #0e7490;
+    --eco-lt:   #cffafe;
+    --eco-bg:   #ecfeff;
+    --soc:      #16a34a;
+    --soc-lt:   #dcfce7;
+    --soc-bg:   #f0fdf4;
+    --gov:      #7c3aed;
+    --gov-lt:   #ede9fe;
+    --gov-bg:   #faf5ff;
+    --inv:      #d97706;
+    --inv-lt:   #fef3c7;
+    --inv-bg:   #fffbeb;
+    --red:      #dc2626;
+    --red-lt:   #fee2e2;
+    --yellow:   #d97706;
+    --yellow-lt:#fef9c3;
+    --green:    #16a34a;
+    --green-lt: #dcfce7;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    min-height: 100vh;
+    padding: 18px 22px;
+  }
+
+  /* HEADER */
+  .header {
+    display: flex; align-items: center; justify-content: space-between;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 14px 22px;
+    margin-bottom: 16px;
+    box-shadow: var(--shadow);
+  }
+  .header-left { display: flex; align-items: center; gap: 14px; }
+  .logo-wrap {
+    width: 52px; height: 52px; border-radius: 10px;
+    background: linear-gradient(135deg, #0e7490, #16a34a);
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+    box-shadow: 0 2px 8px rgba(14,116,144,.3);
+    font-size: 1.6rem;
+  }
+  .header-titles h1 { font-size: 1.18rem; font-weight: 800; color: var(--text); }
+  .header-titles p  { font-size: 0.73rem; color: var(--muted); margin-top: 1px; }
+  .header-right { display: flex; gap: 8px; align-items: center; }
+  .pill {
+    padding: 5px 13px; border-radius: 20px;
+    font-size: 0.73rem; font-weight: 600;
+  }
+  .pill-dark   { background: var(--text); color: #fff; }
+  .pill-light  { background: var(--surface2); color: var(--muted); border: 1px solid var(--border); }
+
+  /* SCORE CARDS */
+  .score-row {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 14px;
+    margin-bottom: 16px;
+  }
+  .score-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 13px;
+    padding: 16px 18px 14px;
+    box-shadow: var(--shadow);
+    position: relative; overflow: hidden;
+  }
+  .score-card::after {
+    content: ''; position: absolute;
+    bottom: 0; left: 0; right: 0; height: 3px;
+    border-radius: 0 0 13px 13px;
+  }
+  .score-card.eco::after  { background: linear-gradient(90deg,#0e7490,#22d3ee); }
+  .score-card.soc::after  { background: linear-gradient(90deg,#16a34a,#4ade80); }
+  .score-card.gov::after  { background: linear-gradient(90deg,#7c3aed,#a78bfa); }
+  .score-card.inv::after  { background: linear-gradient(90deg,#d97706,#fbbf24); }
+  .sc-label {
+    font-size: 0.62rem; text-transform: uppercase;
+    letter-spacing: .12em; font-weight: 700;
+    color: var(--muted); margin-bottom: 8px;
+  }
+  .sc-val { font-size: 2.2rem; font-weight: 900; line-height: 1; }
+  .sc-pct { font-size: 1.1rem; font-weight: 400; color: var(--muted); }
+  .sc-delta { margin-top: 8px; font-size: 0.7rem; font-weight: 600; }
+  .delta-up   { color: var(--green); }
+  .delta-down { color: var(--red); }
+  .delta-flat { color: var(--yellow); }
+
+  /* MAIN LAYOUT */
+  .main-layout {
+    display: grid;
+    grid-template-columns: 1fr 280px;
+    gap: 16px;
+  }
+
+  /* MAP CARD */
+  .map-card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 13px; padding: 18px; box-shadow: var(--shadow);
+  }
+  .card-title {
+    font-size: 0.65rem; text-transform: uppercase;
+    letter-spacing: .14em; font-weight: 700;
+    color: var(--muted); margin-bottom: 14px;
+    display: flex; align-items: center; gap: 7px;
+  }
+  .card-title::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+
+  .persp-row {
+    display: flex; gap: 0;
+    margin-bottom: 10px;
+    border-radius: 10px; overflow: hidden;
+    border: 1px solid var(--border);
+  }
+  .persp-row:last-child { margin-bottom: 0; }
+  .persp-label {
+    width: 34px; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    writing-mode: vertical-rl; text-orientation: mixed;
+    transform: rotate(180deg);
+    font-size: 0.6rem; font-weight: 800;
+    text-transform: uppercase; letter-spacing: .14em;
+    color: #fff; padding: 10px 0;
+  }
+  .persp-label.eco  { background: var(--eco); }
+  .persp-label.soc  { background: var(--soc); }
+  .persp-label.gov  { background: var(--gov); }
+  .persp-label.inv  { background: var(--inv); }
+  .persp-body {
+    flex: 1; display: grid;
+    grid-template-columns: 1fr 1fr;
+    background: var(--surface2);
+  }
+  .obj-card {
+    padding: 9px 12px;
+    border-right: 1px solid var(--border);
+    border-bottom: 1px solid var(--border);
+    display: flex; flex-direction: column; gap: 5px;
+  }
+  .obj-card:nth-child(even)  { border-right: none; }
+  .obj-card:nth-last-child(-n+2) { border-bottom: none; }
+  .obj-top { display: flex; justify-content: space-between; align-items: center; }
+  .obj-name { font-size: 0.73rem; font-weight: 700; color: var(--text); }
+  .obj-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+  .obj-meta { font-size: 0.64rem; color: var(--muted); }
+  .obj-bar-bg { height: 5px; background: #e5eaf4; border-radius: 3px; }
+  .obj-bar-fill { height: 100%; border-radius: 3px; transition: width .4s; }
+
+  /* RIGHT COLUMN */
+  .right-col { display: flex; flex-direction: column; gap: 14px; }
+  .donut-card, .alerts-card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 13px; padding: 18px; box-shadow: var(--shadow);
+  }
+  .alerts-card { flex: 1; display: flex; flex-direction: column; gap: 8px; }
+  .donut-wrap { display: flex; justify-content: center; margin: 10px 0; }
+  .donut-legend { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-top: 10px; }
+  .legend-item { display: flex; align-items: center; gap: 6px; font-size: 0.68rem; }
+  .legend-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+  .legend-name { color: var(--muted); }
+  .legend-val  { font-weight: 700; color: var(--text); margin-left: auto; }
+
+  .alert-item {
+    padding: 9px 11px; border-radius: 9px;
+    border-left: 3px solid;
+    display: flex; flex-direction: column; gap: 2px;
+  }
+  .alert-item.crit   { background: var(--red-lt);    border-color: var(--red); }
+  .alert-item.warn   { background: var(--yellow-lt); border-color: var(--inv); }
+  .alert-item.ok     { background: var(--green-lt);  border-color: var(--soc); }
+  .alert-badge {
+    font-size: 0.6rem; font-weight: 800; text-transform: uppercase; letter-spacing: .1em;
+  }
+  .crit .alert-badge { color: var(--red); }
+  .warn .alert-badge { color: var(--inv); }
+  .ok   .alert-badge { color: var(--soc); }
+  .alert-text { font-size: 0.69rem; color: var(--text); line-height: 1.4; }
+
+  /* BOTTOM */
+  .bottom-grid {
+    display: grid; grid-template-columns: 2fr 1fr;
+    gap: 16px; margin-top: 16px;
+  }
+  .trend-card, .dist-card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 13px; padding: 18px; box-shadow: var(--shadow);
+  }
+  .dist-legend { display: flex; flex-direction: column; gap: 8px; margin-top: 10px; }
+  .dist-item { display: flex; align-items: center; gap: 8px; font-size: 0.72rem; }
+  .dist-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+  .dist-label { color: var(--muted); flex: 1; }
+  .dist-val   { font-weight: 700; color: var(--text); }
+
+  /* KPI TABLE */
+  .table-card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 13px; padding: 20px;
+    margin-top: 16px; box-shadow: var(--shadow); overflow-x: auto;
+  }
+  table { width: 100%; border-collapse: collapse; font-size: 0.78rem; }
+  thead tr { border-bottom: 2px solid var(--border); }
+  thead th {
+    text-align: left; padding: 6px 10px;
+    font-size: 0.68rem; text-transform: uppercase;
+    letter-spacing: .08em; color: var(--muted); font-weight: 700;
+  }
+  tbody tr { border-bottom: 1px solid var(--border); }
+  tbody tr:last-child { border-bottom: none; }
+  tbody tr:hover { background: var(--surface2); }
+  td { padding: 10px; vertical-align: middle; }
+  .persp-tag {
+    font-size: 0.68rem; font-weight: 700; padding: 3px 8px; border-radius: 6px;
+  }
+  .tag-eco { background: var(--eco-lt); color: var(--eco); }
+  .tag-soc { background: var(--soc-lt); color: var(--soc); }
+  .tag-gov { background: var(--gov-lt); color: var(--gov); }
+  .tag-inv { background: var(--inv-lt); color: var(--inv); }
+  .inline-bar { width: 90px; height: 7px; background: #e8ecf5; border-radius: 4px; }
+  .inline-fill { height: 100%; border-radius: 4px; }
+  .chip {
+    display: inline-flex; align-items: center; gap: 3px;
+    font-size: 0.68rem; font-weight: 700;
+    padding: 3px 8px; border-radius: 8px; white-space: nowrap;
+  }
+  .chip.green  { background: var(--green-lt);  color: var(--green); }
+  .chip.yellow { background: var(--yellow-lt); color: var(--yellow); }
+  .chip.red    { background: var(--red-lt);    color: var(--red); }
+  .trend-arrow { font-size: 0.8rem; font-weight: 700; }
+  .ta-up   { color: var(--green); }
+  .ta-flat { color: var(--yellow); }
+  .ta-down { color: var(--red); }
+
+  .footer {
+    text-align: center; padding: 14px;
+    font-size: 0.64rem; color: var(--muted); letter-spacing: .04em; margin-top: 4px;
+  }
+
+  /* Context strip */
+  .context-strip {
+    display: grid; grid-template-columns: repeat(4, 1fr);
+    gap: 10px; margin-bottom: 16px;
+  }
+  .ctx-item {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 10px; padding: 10px 14px;
+    box-shadow: var(--shadow);
+    display: flex; flex-direction: column; gap: 2px;
+  }
+  .ctx-label { font-size: 0.6rem; text-transform: uppercase; letter-spacing: .1em; color: var(--muted); font-weight: 700; }
+  .ctx-value { font-size: 0.95rem; font-weight: 800; color: var(--text); }
+  .ctx-sub   { font-size: 0.62rem; color: var(--muted); }
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="header">
+  <div class="header-left">
+    <div class="logo-wrap">🏔️</div>
+    <div class="header-titles">
+      <h1>Mapa Estratégico — Itamonte</h1>
+      <p>Prefeitura Municipal · Diagnóstico SEBRAE/MG · Balanced Scorecard Municipal</p>
+    </div>
+  </div>
+  <div class="header-right">
+    <span class="pill pill-light">📅 2021–2025</span>
+    <span class="pill pill-dark">Score Global &nbsp;<strong>52%</strong></span>
+  </div>
+</div>
+
+<!-- CONTEXT STRIP -->
+<div class="context-strip">
+  <div class="ctx-item">
+    <div class="ctx-label">👥 População</div>
+    <div class="ctx-value">14.786</div>
+    <div class="ctx-sub">habitantes · IBGE 2022</div>
+  </div>
+  <div class="ctx-item">
+    <div class="ctx-label">💰 PIB per Capita</div>
+    <div class="ctx-value">R$74,6K</div>
+    <div class="ctx-sub">+86% vs MG (R$40,1K)</div>
+  </div>
+  <div class="ctx-item">
+    <div class="ctx-label">📊 IDH 2010</div>
+    <div class="ctx-value">0,705</div>
+    <div class="ctx-sub">Alto · 70º Ranking MG</div>
+  </div>
+  <div class="ctx-item">
+    <div class="ctx-label">📈 ISDEL 2021</div>
+    <div class="ctx-value">0,369</div>
+    <div class="ctx-sub">Médio · MG: 0,449</div>
+  </div>
+</div>
+
+<!-- SCORE CARDS -->
+<div class="score-row">
+  <div class="score-card eco">
+    <div class="sc-label">🏭 Econômico</div>
+    <div class="sc-val" style="color:var(--eco)">78<span class="sc-pct">%</span></div>
+    <div class="sc-delta delta-up">▲ PIB per capita acima de MG</div>
+  </div>
+  <div class="score-card soc">
+    <div class="sc-label">🤝 Social</div>
+    <div class="sc-val" style="color:var(--soc)">55<span class="sc-pct">%</span></div>
+    <div class="sc-delta delta-flat">→ IDH alto, vulner. 62%</div>
+  </div>
+  <div class="score-card gov">
+    <div class="sc-label">🏛️ Governança</div>
+    <div class="sc-val" style="color:var(--red)">43<span class="sc-pct">%</span></div>
+    <div class="sc-delta delta-down">▼ Planejamento crítico: 0,250</div>
+  </div>
+  <div class="score-card inv">
+    <div class="sc-label">💡 Inovação</div>
+    <div class="sc-val" style="color:var(--red)">31<span class="sc-pct">%</span></div>
+    <div class="sc-delta delta-down">▼ Inovação: 0,016 vs 0,178 MG</div>
+  </div>
+</div>
+
+<!-- MAIN LAYOUT -->
+<div class="main-layout">
+
+  <!-- MAPA ESTRATÉGICO -->
+  <div class="map-card">
+    <div class="card-title">🗺️ Mapa Estratégico — Perspectivas BSC Municipal</div>
+
+    <!-- ECONÔMICO -->
+    <div class="persp-row">
+      <div class="persp-label eco">Econômico</div>
+      <div class="persp-body">
+        <div class="obj-card">
+          <div class="obj-top">
+            <span class="obj-name">Ampliar PIB Municipal</span>
+            <span class="obj-dot" style="background:var(--eco)"></span>
+          </div>
+          <div class="obj-meta">PIB: R$1,2bi (103º MG) | Meta: R$1,5bi</div>
+          <div class="obj-bar-bg"><div class="obj-bar-fill" style="width:80%;background:var(--eco)"></div></div>
+        </div>
+        <div class="obj-card">
+          <div class="obj-top">
+            <span class="obj-name">Expandir Pequenos Negócios</span>
+            <span class="obj-dot" style="background:var(--eco)"></span>
+          </div>
+          <div class="obj-meta">Real: 1.996 | Meta: 2.400 (+20%)</div>
+          <div class="obj-bar-bg"><div class="obj-bar-fill" style="width:72%;background:var(--eco)"></div></div>
+        </div>
+        <div class="obj-card">
+          <div class="obj-top">
+            <span class="obj-name">Fortalecer Inserção Competitiva</span>
+            <span class="obj-dot" style="background:var(--soc)"></span>
+          </div>
+          <div class="obj-meta">ISDEL Inserção: 0,487 | Meta: 0,550</div>
+          <div class="obj-bar-bg"><div class="obj-bar-fill" style="width:88%;background:var(--soc)"></div></div>
+        </div>
+        <div class="obj-card">
+          <div class="obj-top">
+            <span class="obj-name">Alavancar Comércio Internacional</span>
+            <span class="obj-dot" style="background:var(--soc)"></span>
+          </div>
+          <div class="obj-meta">ISDEL: 0,877 (acima MG: 0,575)</div>
+          <div class="obj-bar-bg"><div class="obj-bar-fill" style="width:92%;background:var(--soc)"></div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SOCIAL -->
+    <div class="persp-row">
+      <div class="persp-label soc">Social</div>
+      <div class="persp-body">
+        <div class="obj-card">
+          <div class="obj-top">
+            <span class="obj-name">Reduzir Vulnerabilidade Social</span>
+            <span class="obj-dot" style="background:var(--red)"></span>
+          </div>
+          <div class="obj-meta">Real: 62% | Meta: &lt;50%</div>
+          <div class="obj-bar-bg"><div class="obj-bar-fill" style="width:42%;background:var(--red)"></div></div>
+        </div>
+        <div class="obj-card">
+          <div class="obj-top">
+            <span class="obj-name">Ampliar Ensino Superior</span>
+            <span class="obj-dot" style="background:var(--red)"></span>
+          </div>
+          <div class="obj-meta">8/1.000 hab | MG: 44/1.000 hab</div>
+          <div class="obj-bar-bg"><div class="obj-bar-fill" style="width:18%;background:var(--red)"></div></div>
+        </div>
+        <div class="obj-card">
+          <div class="obj-top">
+            <span class="obj-name">Melhorar IDH Municipal</span>
+            <span class="obj-dot" style="background:var(--inv)"></span>
+          </div>
+          <div class="obj-meta">Real: 0,705 | Meta: 0,731 (≥ MG)</div>
+          <div class="obj-bar-bg"><div class="obj-bar-fill" style="width:68%;background:var(--inv)"></div></div>
+        </div>
+        <div class="obj-card">
+          <div class="obj-top">
+            <span class="obj-name">Elevar IDEB Educação Básica</span>
+            <span class="obj-dot" style="background:var(--soc)"></span>
+          </div>
+          <div class="obj-meta">IDEB Anos Iniciais: 6,5 (MG: 5,9) ✓</div>
+          <div class="obj-bar-bg"><div class="obj-bar-fill" style="width:85%;background:var(--soc)"></div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- GOVERNANÇA -->
+    <div class="persp-row">
+      <div class="persp-label gov">Governança</div>
+      <div class="persp-body">
+        <div class="obj-card">
+          <div class="obj-top">
+            <span class="obj-name">Fortalecer Planejamento Municipal</span>
+            <span class="obj-dot" style="background:var(--red)"></span>
+          </div>
+          <div class="obj-meta">ISDEL Planej.: 0,250 | MG: 0,821</div>
+          <div class="obj-bar-bg"><div class="obj-bar-fill" style="width:30%;background:var(--red)"></div></div>
+        </div>
+        <div class="obj-card">
+          <div class="obj-top">
+            <span class="obj-name">Melhorar Gestão Fiscal</span>
+            <span class="obj-dot" style="background:var(--red)"></span>
+          </div>
+          <div class="obj-meta">ISDEL Fiscal: 0,154 | MG: 0,231</div>
+          <div class="obj-bar-bg"><div class="obj-bar-fill" style="width:38%;background:var(--red)"></div></div>
+        </div>
+        <div class="obj-card">
+          <div class="obj-top">
+            <span class="obj-name">Ampliar Articulação Institucional</span>
+            <span class="obj-dot" style="background:var(--red)"></span>
+          </div>
+          <div class="obj-meta">ISDEL Articulação: 0,083 | MG: 0,152</div>
+          <div class="obj-bar-bg"><div class="obj-bar-fill" style="width:35%;background:var(--red)"></div></div>
+        </div>
+        <div class="obj-card">
+          <div class="obj-top">
+            <span class="obj-name">Ampliar Saneamento Básico</span>
+            <span class="obj-dot" style="background:var(--inv)"></span>
+          </div>
+          <div class="obj-meta">ISDEL Saneam.: 0,461 | MG: 0,795</div>
+          <div class="obj-bar-bg"><div class="obj-bar-fill" style="width:58%;background:var(--inv)"></div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- INOVAÇÃO -->
+    <div class="persp-row">
+      <div class="persp-label inv">Inovação</div>
+      <div class="persp-body">
+        <div class="obj-card">
+          <div class="obj-top">
+            <span class="obj-name">Desenvolver Ecossistema Inovação</span>
+            <span class="obj-dot" style="background:var(--red)"></span>
+          </div>
+          <div class="obj-meta">ISDEL Inovação: 0,016 | MG: 0,178</div>
+          <div class="obj-bar-bg"><div class="obj-bar-fill" style="width:9%;background:var(--red)"></div></div>
+        </div>
+        <div class="obj-card">
+          <div class="obj-top">
+            <span class="obj-name">Fomentar Turismo e Economia Criativa</span>
+            <span class="obj-dot" style="background:var(--red)"></span>
+          </div>
+          <div class="obj-meta">ISDEL Turismo: 0,056 | MG: 0,126</div>
+          <div class="obj-bar-bg"><div class="obj-bar-fill" style="width:44%;background:var(--red)"></div></div>
+        </div>
+        <div class="obj-card">
+          <div class="obj-top">
+            <span class="obj-name">Ampliar Conectividade Digital</span>
+            <span class="obj-dot" style="background:var(--inv)"></span>
+          </div>
+          <div class="obj-meta">ISDEL Conectiv.: 0,178 | MG: 0,195</div>
+          <div class="obj-bar-bg"><div class="obj-bar-fill" style="width:62%;background:var(--inv)"></div></div>
+        </div>
+        <div class="obj-card">
+          <div class="obj-top">
+            <span class="obj-name">Educação Empreendedora</span>
+            <span class="obj-dot" style="background:var(--red)"></span>
+          </div>
+          <div class="obj-meta">ISDEL Educ. Empr.: 0,000 | MG: 0,016</div>
+          <div class="obj-bar-bg"><div class="obj-bar-fill" style="width:5%;background:var(--red)"></div></div>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /map-card -->
+
+  <!-- RIGHT COLUMN -->
+  <div class="right-col">
+
+    <!-- Donut -->
+    <div class="donut-card">
+      <div class="card-title">📊 Score por Perspectiva</div>
+      <div class="donut-wrap">
+        <!-- r=68: circ=427.26 | r=54: circ=339.29 | r=40: circ=251.33 | r=26: circ=163.36 -->
+        <!-- eco 78%: offset=427.26*(1-.78)=93.99 -->
+        <!-- soc 55%: offset=339.29*(1-.55)=152.68 -->
+        <!-- gov 43%: offset=251.33*(1-.43)=143.26 -->
+        <!-- inv 31%: offset=163.36*(1-.31)=112.72 -->
+        <svg width="160" height="160" viewBox="0 0 160 160">
+          <circle cx="80" cy="80" r="68" fill="none" stroke="#e8ecf5" stroke-width="10"/>
+          <circle cx="80" cy="80" r="54" fill="none" stroke="#e8ecf5" stroke-width="10"/>
+          <circle cx="80" cy="80" r="40" fill="none" stroke="#e8ecf5" stroke-width="10"/>
+          <circle cx="80" cy="80" r="26" fill="none" stroke="#e8ecf5" stroke-width="10"/>
+          <circle cx="80" cy="80" r="68" fill="none" stroke="#0e7490" stroke-width="10"
+            stroke-dasharray="427.26" stroke-dashoffset="93.99" stroke-linecap="round"
+            transform="rotate(-90 80 80)"/>
+          <circle cx="80" cy="80" r="54" fill="none" stroke="#16a34a" stroke-width="10"
+            stroke-dasharray="339.29" stroke-dashoffset="152.68" stroke-linecap="round"
+            transform="rotate(-90 80 80)"/>
+          <circle cx="80" cy="80" r="40" fill="none" stroke="#7c3aed" stroke-width="10"
+            stroke-dasharray="251.33" stroke-dashoffset="143.26" stroke-linecap="round"
+            transform="rotate(-90 80 80)"/>
+          <circle cx="80" cy="80" r="26" fill="none" stroke="#d97706" stroke-width="10"
+            stroke-dasharray="163.36" stroke-dashoffset="112.72" stroke-linecap="round"
+            transform="rotate(-90 80 80)"/>
+          <text x="80" y="76" text-anchor="middle" fill="#1a2040"
+            font-size="18" font-weight="900" font-family="Segoe UI,system-ui,sans-serif">52%</text>
+          <text x="80" y="90" text-anchor="middle" fill="#64748b"
+            font-size="8" font-family="Segoe UI,system-ui,sans-serif">Score Global</text>
+        </svg>
+      </div>
+      <div class="donut-legend">
+        <div class="legend-item">
+          <span class="legend-dot" style="background:var(--eco)"></span>
+          <span class="legend-name">Econômico</span>
+          <span class="legend-val">78%</span>
+        </div>
+        <div class="legend-item">
+          <span class="legend-dot" style="background:var(--soc)"></span>
+          <span class="legend-name">Social</span>
+          <span class="legend-val">55%</span>
+        </div>
+        <div class="legend-item">
+          <span class="legend-dot" style="background:var(--gov)"></span>
+          <span class="legend-name">Governança</span>
+          <span class="legend-val">43%</span>
+        </div>
+        <div class="legend-item">
+          <span class="legend-dot" style="background:var(--inv)"></span>
+          <span class="legend-name">Inovação</span>
+          <span class="legend-val">31%</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Alertas -->
+    <div class="alerts-card">
+      <div class="card-title">⚡ Alertas de Decisão</div>
+      <div class="alert-item crit">
+        <div class="alert-badge">🔴 Crítico</div>
+        <div class="alert-text">Inovação: 0,016 vs 0,178 MG. Ecossistema praticamente inexistente.</div>
+      </div>
+      <div class="alert-item crit">
+        <div class="alert-badge">🔴 Crítico</div>
+        <div class="alert-text">Planejamento Municipal: 0,250 vs 0,821 MG. Gap de 57pp exige ação urgente.</div>
+      </div>
+      <div class="alert-item crit">
+        <div class="alert-badge">🔴 Crítico</div>
+        <div class="alert-text">Ensino Superior: 8/1.000 hab vs 44 MG. Evasão de talentos alto risco.</div>
+      </div>
+      <div class="alert-item warn">
+        <div class="alert-badge">🟡 Atenção</div>
+        <div class="alert-text">Saneamento: 0,461 vs 0,795 MG. Urgente ampliar cobertura rural (35% pop.).</div>
+      </div>
+      <div class="alert-item warn">
+        <div class="alert-badge">🟡 Atenção</div>
+        <div class="alert-text">Vulnerabilidade Social: 62% — acima da média regional.</div>
+      </div>
+      <div class="alert-item ok">
+        <div class="alert-badge">🟢 Destaque</div>
+        <div class="alert-text">PIB per capita R$74,6K supera MG (R$40,1K). Alavancar diversificação.</div>
+      </div>
+      <div class="alert-item ok">
+        <div class="alert-badge">🟢 Destaque</div>
+        <div class="alert-text">Comércio Internacional: 0,877 acima MG (0,575). Vantagem competitiva real.</div>
+      </div>
+    </div>
+
+  </div><!-- /right-col -->
+</div>
+
+<!-- KPI TABLE -->
+<div class="table-card">
+  <div class="card-title">📋 Painel de KPIs — ISDEL Itamonte vs Minas Gerais</div>
+  <table>
+    <thead>
+      <tr>
+        <th>Perspectiva</th>
+        <th>Indicador</th>
+        <th>Itamonte</th>
+        <th>MG (Referência)</th>
+        <th>Progresso</th>
+        <th>Status</th>
+        <th>Tendência</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="persp-tag tag-eco">Econômico</span></td>
+        <td>PIB per Capita</td>
+        <td><strong>R$74.613</strong></td>
+        <td>R$40.052</td>
+        <td><div class="inline-bar"><div class="inline-fill" style="width:90%;background:var(--eco)"></div></div></td>
+        <td><span class="chip green">✓ Superou</span></td>
+        <td class="trend-arrow ta-up">▲ Acima</td>
+      </tr>
+      <tr>
+        <td><span class="persp-tag tag-eco">Econômico</span></td>
+        <td>ISDEL Inserção Competitiva</td>
+        <td><strong>0,487</strong></td>
+        <td>0,441</td>
+        <td><div class="inline-bar"><div class="inline-fill" style="width:85%;background:var(--eco)"></div></div></td>
+        <td><span class="chip green">✓ Acima MG</span></td>
+        <td class="trend-arrow ta-up">▲ Acima</td>
+      </tr>
+      <tr>
+        <td><span class="persp-tag tag-eco">Econômico</span></td>
+        <td>ISDEL Comércio Internacional</td>
+        <td><strong>0,877</strong></td>
+        <td>0,575</td>
+        <td><div class="inline-bar"><div class="inline-fill" style="width:95%;background:var(--eco)"></div></div></td>
+        <td><span class="chip green">✓ Superou</span></td>
+        <td class="trend-arrow ta-up">▲ Acima</td>
+      </tr>
+      <tr>
+        <td><span class="persp-tag tag-eco">Econômico</span></td>
+        <td>ISDEL Tecido Empresarial</td>
+        <td><strong>0,550</strong></td>
+        <td>0,589</td>
+        <td><div class="inline-bar"><div class="inline-fill" style="width:70%;background:var(--inv)"></div></div></td>
+        <td><span class="chip yellow">⚠ Próximo</span></td>
+        <td class="trend-arrow ta-flat">→ Estável</td>
+      </tr>
+      <tr>
+        <td><span class="persp-tag tag-soc">Social</span></td>
+        <td>IDH Municipal</td>
+        <td><strong>0,705</strong></td>
+        <td>0,731</td>
+        <td><div class="inline-bar"><div class="inline-fill" style="width:68%;background:var(--inv)"></div></div></td>
+        <td><span class="chip yellow">⚠ Abaixo</span></td>
+        <td class="trend-arrow ta-flat">→ Estável</td>
+      </tr>
+      <tr>
+        <td><span class="persp-tag tag-soc">Social</span></td>
+        <td>IDEB Ensino Fund. Iniciais</td>
+        <td><strong>6,5</strong></td>
+        <td>5,9</td>
+        <td><div class="inline-bar"><div class="inline-fill" style="width:86%;background:var(--soc)"></div></div></td>
+        <td><span class="chip green">✓ Superou</span></td>
+        <td class="trend-arrow ta-up">▲ Subindo</td>
+      </tr>
+      <tr>
+        <td><span class="persp-tag tag-soc">Social</span></td>
+        <td>Ensino Superior (per 1.000 hab)</td>
+        <td><strong style="color:var(--red)">8</strong></td>
+        <td>44</td>
+        <td><div class="inline-bar"><div class="inline-fill" style="width:18%;background:var(--red)"></div></div></td>
+        <td><span class="chip red">✗ Crítico</span></td>
+        <td class="trend-arrow ta-down">▼ Gap alto</td>
+      </tr>
+      <tr>
+        <td><span class="persp-tag tag-soc">Social</span></td>
+        <td>Vulnerabilidade Social (IMRS)</td>
+        <td><strong style="color:var(--red)">62%</strong></td>
+        <td>Meta &lt;50%</td>
+        <td><div class="inline-bar"><div class="inline-fill" style="width:40%;background:var(--red)"></div></div></td>
+        <td><span class="chip red">✗ Crítico</span></td>
+        <td class="trend-arrow ta-down">▼ Alto risco</td>
+      </tr>
+      <tr>
+        <td><span class="persp-tag tag-gov">Governança</span></td>
+        <td>ISDEL Planejamento</td>
+        <td><strong style="color:var(--red)">0,250</strong></td>
+        <td>0,821</td>
+        <td><div class="inline-bar"><div class="inline-fill" style="width:30%;background:var(--red)"></div></div></td>
+        <td><span class="chip red">✗ Crítico</span></td>
+        <td class="trend-arrow ta-down">▼ Gap severo</td>
+      </tr>
+      <tr>
+        <td><span class="persp-tag tag-gov">Governança</span></td>
+        <td>ISDEL Gestão Fiscal</td>
+        <td><strong style="color:var(--red)">0,154</strong></td>
+        <td>0,231</td>
+        <td><div class="inline-bar"><div class="inline-fill" style="width:38%;background:var(--red)"></div></div></td>
+        <td><span class="chip red">✗ Crítico</span></td>
+        <td class="trend-arrow ta-down">▼ Abaixo</td>
+      </tr>
+      <tr>
+        <td><span class="persp-tag tag-gov">Governança</span></td>
+        <td>ISDEL Saneamento</td>
+        <td><strong style="color:var(--yellow)">0,461</strong></td>
+        <td>0,795</td>
+        <td><div class="inline-bar"><div class="inline-fill" style="width:58%;background:var(--inv)"></div></div></td>
+        <td><span class="chip yellow">⚠ Atenção</span></td>
+        <td class="trend-arrow ta-flat">→ Estável</td>
+      </tr>
+      <tr>
+        <td><span class="persp-tag tag-gov">Governança</span></td>
+        <td>ISDEL Articulação Institucional</td>
+        <td><strong style="color:var(--red)">0,083</strong></td>
+        <td>0,152</td>
+        <td><div class="inline-bar"><div class="inline-fill" style="width:35%;background:var(--red)"></div></div></td>
+        <td><span class="chip red">✗ Crítico</span></td>
+        <td class="trend-arrow ta-down">▼ Baixo</td>
+      </tr>
+      <tr>
+        <td><span class="persp-tag tag-inv">Inovação</span></td>
+        <td>ISDEL Inovação</td>
+        <td><strong style="color:var(--red)">0,016</strong></td>
+        <td>0,178</td>
+        <td><div class="inline-bar"><div class="inline-fill" style="width:9%;background:var(--red)"></div></div></td>
+        <td><span class="chip red">✗ Crítico</span></td>
+        <td class="trend-arrow ta-down">▼ Crítico</td>
+      </tr>
+      <tr>
+        <td><span class="persp-tag tag-inv">Inovação</span></td>
+        <td>ISDEL Turismo e Econ. Criativa</td>
+        <td><strong style="color:var(--red)">0,056</strong></td>
+        <td>0,126</td>
+        <td><div class="inline-bar"><div class="inline-fill" style="width:44%;background:var(--red)"></div></div></td>
+        <td><span class="chip red">✗ Abaixo</span></td>
+        <td class="trend-arrow ta-down">▼ Abaixo</td>
+      </tr>
+      <tr>
+        <td><span class="persp-tag tag-inv">Inovação</span></td>
+        <td>ISDEL Conectividade Digital</td>
+        <td><strong>0,178</strong></td>
+        <td>0,195</td>
+        <td><div class="inline-bar"><div class="inline-fill" style="width:62%;background:var(--inv)"></div></div></td>
+        <td><span class="chip yellow">⚠ Próximo</span></td>
+        <td class="trend-arrow ta-flat">→ Crescendo</td>
+      </tr>
+      <tr>
+        <td><span class="persp-tag tag-inv">Inovação</span></td>
+        <td>ISDEL Capital Empreendedor</td>
+        <td><strong style="color:var(--yellow)">0,204</strong></td>
+        <td>0,253</td>
+        <td><div class="inline-bar"><div class="inline-fill" style="width:54%;background:var(--inv)"></div></div></td>
+        <td><span class="chip yellow">⚠ Atenção</span></td>
+        <td class="trend-arrow ta-flat">→ Estável</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- BOTTOM GRID -->
+<div class="bottom-grid">
+
+  <div class="trend-card">
+    <div class="card-title">📈 Forças e Fraquezas — ISDEL por Dimensão vs MG</div>
+    <svg width="100%" height="160" viewBox="0 0 480 160">
+      <!-- Grid -->
+      <line x1="120" y1="10" x2="120" y2="120" stroke="var(--border)" stroke-width="1"/>
+      <line x1="120" y1="120" x2="470" y2="120" stroke="var(--border)" stroke-width="1"/>
+      <!-- Y labels -->
+      <text x="115" y="124" fill="var(--muted)" font-size="9" text-anchor="end">0</text>
+      <text x="115" y="69"  fill="var(--muted)" font-size="9" text-anchor="end">0,5</text>
+      <text x="115" y="14"  fill="var(--muted)" font-size="9" text-anchor="end">1,0</text>
+      <line x1="120" y1="67" x2="470" y2="67" stroke="var(--border)" stroke-width="0.5" stroke-dasharray="4,4"/>
+      <!-- 5 dimensões: x positions: 165, 235, 305, 375, 445 -->
+      <!-- Values: Cap.Empr:0.204/0.253, Tecido:0.550/0.589, Governança:0.304/0.523, Org.Prod:0.301/0.437, Inserção:0.487/0.441 -->
+      <!-- y = 120 - val*110 -->
+      <!-- MG bars (grey) -->
+      <rect x="155" y="92.2" width="10" height="27.8" fill="#cbd5e1" rx="2"/>
+      <rect x="225" y="55.2" width="10" height="64.8" fill="#cbd5e1" rx="2"/>
+      <rect x="295" y="62.5" width="10" height="57.5" fill="#cbd5e1" rx="2"/>
+      <rect x="365" y="71.9" width="10" height="48.1" fill="#cbd5e1" rx="2"/>
+      <rect x="435" y="71.5" width="10" height="48.5" fill="#cbd5e1" rx="2"/>
+      <!-- Municipal bars (colored) -->
+      <rect x="168" y="97.6" width="10" height="22.4" fill="var(--eco)" rx="2"/>
+      <rect x="238" y="59.5" width="10" height="60.5" fill="var(--soc)" rx="2"/>
+      <rect x="308" y="86.6" width="10" height="33.4" fill="var(--red)" rx="2"/>
+      <rect x="378" y="87.0" width="10" height="33.0" fill="var(--red)" rx="2"/>
+      <rect x="448" y="66.4" width="10" height="53.6" fill="var(--eco)" rx="2"/>
+      <!-- Labels -->
+      <text x="166" y="145" fill="var(--muted)" font-size="7.5" text-anchor="middle">Cap. Empreend.</text>
+      <text x="236" y="145" fill="var(--muted)" font-size="7.5" text-anchor="middle">Tecido Empres.</text>
+      <text x="308" y="145" fill="var(--muted)" font-size="7.5" text-anchor="middle">Governança</text>
+      <text x="378" y="145" fill="var(--muted)" font-size="7.5" text-anchor="middle">Org. Produtiva</text>
+      <text x="448" y="145" fill="var(--muted)" font-size="7.5" text-anchor="middle">Ins. Competitiva</text>
+      <!-- Legend -->
+      <rect x="125" y="150" width="8" height="8" fill="#cbd5e1" rx="1"/>
+      <text x="136" y="158" fill="var(--muted)" font-size="8">Minas Gerais</text>
+      <rect x="200" y="150" width="8" height="8" fill="var(--eco)" rx="1"/>
+      <text x="211" y="158" fill="var(--muted)" font-size="8">Itamonte</text>
+    </svg>
+  </div>
+
+  <div class="dist-card">
+    <div class="card-title">🎯 Status dos 16 Indicadores</div>
+    <div style="display:flex;align-items:center;gap:16px;margin-top:10px;">
+      <svg width="110" height="110" viewBox="0 0 110 110" style="flex-shrink:0">
+        <!-- 16 KPIs: 4 green, 4 yellow, 8 red -->
+        <!-- circ r=40: 251.33 -->
+        <!-- green 4/16=25%: 62.8 | yellow 4/16=25%: 62.8 | red 8/16=50%: 125.7 -->
+        <circle cx="55" cy="55" r="40" fill="none" stroke="#e8ecf5" stroke-width="14"/>
+        <circle cx="55" cy="55" r="40" fill="none" stroke="var(--green)" stroke-width="14"
+          stroke-dasharray="62.8 188.53" stroke-dashoffset="0"
+          transform="rotate(-90 55 55)"/>
+        <circle cx="55" cy="55" r="40" fill="none" stroke="var(--yellow)" stroke-width="14"
+          stroke-dasharray="62.8 188.53" stroke-dashoffset="-62.8"
+          transform="rotate(-90 55 55)"/>
+        <circle cx="55" cy="55" r="40" fill="none" stroke="var(--red)" stroke-width="14"
+          stroke-dasharray="125.7 125.63" stroke-dashoffset="-125.6"
+          transform="rotate(-90 55 55)"/>
+        <text x="55" y="51" text-anchor="middle" fill="var(--text)" font-size="18" font-weight="900">16</text>
+        <text x="55" y="64" text-anchor="middle" fill="var(--muted)" font-size="9">KPIs</text>
+      </svg>
+      <div class="dist-legend">
+        <div class="dist-item">
+          <span class="dist-dot" style="background:var(--green)"></span>
+          <span class="dist-label">No target / acima MG</span>
+          <span class="dist-val">4</span>
+        </div>
+        <div class="dist-item">
+          <span class="dist-dot" style="background:var(--yellow)"></span>
+          <span class="dist-label">Atenção / próximo</span>
+          <span class="dist-val">4</span>
+        </div>
+        <div class="dist-item">
+          <span class="dist-dot" style="background:var(--red)"></span>
+          <span class="dist-label">Crítico / gap severo</span>
+          <span class="dist-val">8</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<div class="footer">
+  Prefeitura Municipal de Itamonte &nbsp;·&nbsp; Mapa Estratégico BSC Municipal &nbsp;·&nbsp;
+  Fonte: SEBRAE/MG — Diagnóstico Municipal 2021 &nbsp;·&nbsp; ISGClaw · ISG Company
+</div>
+
+</body>
+</html>
